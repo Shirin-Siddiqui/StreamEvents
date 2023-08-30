@@ -91,6 +91,103 @@ class EventAggregator
         
         
     }
+
+        /**
+     * 
+     * @param int $days
+     * @param array $subscriptionTierPrice
+     * @return type
+     */
+    public function calculateRevenue(int $days, array $subscriptionTierPrice)
+    {
+        $key = 'stats:TR:' . $this->user->id;
+
+        if (Cache::has($key)) {
+            $total = Cache::get($key);
+        } else {
+            $total = Donation::where('user_id', $this->user->id)
+                ->where('created_at', '>', now()->subDays($days)->endOfDay())
+                ->sum('amount_usd');
+
+            $total += MerchSale::where('user_id', $this->user->id)
+                ->where('created_at', '>', now()->subDays($days)->endOfDay())
+                ->sum(DB::raw('amount'));
+
+            $total += Subscriber::where('user_id', $this->user->id)
+                    ->where('created_at', '>', now()->subDays($days)->endOfDay())
+                    ->where('tier_id', Subscriber::TIER1)
+                    ->count() * $subscriptionTierPrice[Subscriber::TIER1];
+
+            $total += Subscriber::where('user_id', $this->user->id)
+                    ->where('created_at', '>', now()->subDays($days)->endOfDay())
+                    ->where('tier_id', Subscriber::TIER2)
+                    ->count() * $subscriptionTierPrice[Subscriber::TIER2];
+
+            $total += Subscriber::where('user_id', $this->user->id)
+                    ->where('created_at', '>', now()->subDays($days)->endOfDay())
+                    ->where('tier_id', Subscriber::TIER3)
+                    ->count() * $subscriptionTierPrice[Subscriber::TIER3];
+
+            if ($total) {
+                Cache::tags('events:' . $this->user->id)->put($key, $total, $this->ttl);
+            }
+        }
+
+        return $total
+            ? ['amount' => number_format($total, 2), 'currency' => Currency::USD]
+            : null;
+    }
+    
+    /**
+     * 
+     * @param int $days
+     * @return type
+     */
+    public function calculateFollowersGained(int $days)
+    {
+        $key = 'stats:TF:' . $this->user->id;
+
+        if(Cache::has($key)) {
+            $total = Cache::get($key);
+        } else {
+            $total = Follower::where('user_id', $this->user->id)
+                ->where('created_at', '>', now()->subDays($days)->endOfDay())
+                ->count();
+
+            if($total) {
+                Cache::tags('events:' . $this->user->id)->put($key, $total, $this->ttl);
+            }
+        }
+
+        return $total ?: null;
+    }
+    
+    /**
+     * 
+     * @param int $days
+     * @return type
+     */
+    public function getTopSellingItems(int $days)
+    {
+        $key = 'stats:BMS:' . $this->user->id;
+
+        if(Cache::has($key)) {
+            $result = Cache::get($key);
+        } else {
+            $result = MerchSale::where('user_id', $this->user->id)
+                    ->selectRaw('item_name, SUM(amount) as total_sales')
+                    ->where('created_at', '>', now()->subDays($days)->endOfDay())
+            ->groupBy('item_name')
+            ->orderByDesc(MerchSale::raw('SUM(amount)'))
+            ->limit(3)
+            ->get();
+            if($result) {
+                Cache::tags('events:' . $this->user->id)->put($key, $result->toArray(), $this->ttl);
+            }
+        }
+
+        return count($result) ? $result->toArray() : null;
+    }
     
     protected function populate(string $model, array $ids): array
     {

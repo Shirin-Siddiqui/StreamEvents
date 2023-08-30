@@ -41,6 +41,27 @@
             .list-group-item:hover {
                 background-color: #f0f0f0;
             }
+            .info-box {
+                border: 1px solid #ccc;
+                padding: 10px;
+                background-color: #f9f9f9;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                flex-grow: 1;
+                margin-right: 10px;
+                height: 120px; /* Set a fixed height for all boxes */
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                align-items: center; /* Center text vertically */
+            }
+            .info-box__label {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .info-box__value {
+                font-size: 18px;
+            }
     </style>
 </head>
 <body>
@@ -48,6 +69,28 @@
         <div class="header">
             <h1>Stream Events</h1>
             <a class="logout-btn" href="{{ url('logout') }}">Logout</a>
+        </div>
+        <div class="event-list mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="info-box">
+                    <div class="info-box__label">Total Revenue</div>
+                    <div class="info-box__value">${{ $totalRevenue['amount'] }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-box__label">Followers Gained</div>
+                    <div class="info-box__value">{{ $followersGained }}</div>
+                </div>
+            <div class="info-box">
+                <div class="info-box__label">Top Items</div>
+                <div class="info-box__value">
+                    @foreach ($topItems as $item)
+                    {{ $item['item_name'] }} ({{ $item['total_sales'] }} sold)
+                    @if (!$loop->last)
+                    <br>
+                    @endif
+                    @endforeach
+                </div>
+            </div>
         </div>
         <ul class="list-group" id="event-list">
                     <!-- Display initial events -->
@@ -90,8 +133,8 @@
         }
 
         function renderEvents(events) {
-    const eventsList = $('#event-list');
-    events.forEach(item => {
+        const eventsList = $('#event-list');
+        events.forEach(item => {
         const isReadClass = item.is_read ? 'event-read' : 'event-unread';
         const fontWeight = item.is_read ? 'normal' : 'bold';
         const textColor = item.is_read ? '#333' : '#000';
