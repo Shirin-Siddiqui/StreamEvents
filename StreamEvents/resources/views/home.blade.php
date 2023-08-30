@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Stream Events</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <style>
         body {
@@ -89,19 +90,32 @@
         }
 
         function renderEvents(events) {
-            const eventsList = $('#event-list');
-            var donationItem = '';
-            events.forEach(item => {
-               console.log(item);
-                if(item.type == 'donation'){
-                   donationItem = `<li class="list-group-item">RandomUser donated ${item.eventable.amount} ${item.eventable.currency} to you!</li>`;
-                } else if(item.type == 'subscriber') {
-                  donationItem = `<li class="list-group-item"> ${item.eventable.name} (${item.eventable.tier}) subscribed to you!</li>`;
-                }else if(item.type == 'follower') {
-                  donationItem = `<li class="list-group-item"> ${item.eventable.name} followed you!</li>`;
+    const eventsList = $('#event-list');
+    events.forEach(item => {
+        const isReadClass = item.is_read ? 'event-read' : 'event-unread';
+        const fontWeight = item.is_read ? 'normal' : 'bold';
+        const textColor = item.is_read ? '#333' : '#000';
+
+        let eventContent = '';
+
+                if (item.type === 'donation') {
+                    eventContent = `RandomUser donated ${item.eventable.amount} ${item.eventable.currency} to you!`;
+                } else if (item.type === 'subscriber') {
+                    eventContent = `${item.eventable.name} (${item.eventable.tier}) subscribed to you!`;
+                } else if (item.type === 'follower') {
+                    eventContent = `${item.eventable.name} followed you!`;
                 } else {
-                    donationItem = `<li class="list-group-item">RandomUser bought some ${item.eventable.item_name} from you for ${item.eventable.amount} ${item.eventable.currency}!</li>`;
+                    eventContent = `RandomUser bought some ${item.eventable.item_name} from you for ${item.eventable.amount} ${item.eventable.currency}!`;
                 }
+
+                const donationItem = `
+                    <li class="list-group-item ${isReadClass}" 
+                        style="font-weight: ${fontWeight}; color: ${textColor};"
+                        onclick="handleEventClick(${item.id}, $(this))">
+                        ${eventContent}
+                    </li>
+                `;
+
                 eventsList.append(donationItem);
             });
         }
@@ -109,6 +123,25 @@
         // Initial load
         loadEvents();
 
+        function handleEventClick(eventID, listItem) {
+    console.log('Clicked event id:', eventID);
+    // Update event status using AJAX
+    $.ajax({
+        url: `/events/${eventID}`,
+        method: 'PUT',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function (response) {
+            console.log('Event status updated:', response.message);
+            // Add class and update background color
+            listItem.removeClass('event-unread').addClass('event-read');
+        },
+        error: function (error) {
+            console.error('Error updating event status:', error);
+        }
+    });
+}
         // Infinite scrolling
         $(window).scroll(function () {
             if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {

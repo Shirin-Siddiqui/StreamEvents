@@ -25,3 +25,5 @@ Route::get('/auth/{provider}/callback', [AuthController::class, 'callback']);
 
 Route::get('/home', [HomeController::class, 'index'])->name('dashboard');
 Route::get('/events', [EventController::class, 'index']);
+
+Route::put('/events/{event}', [EventController::class, 'updateStatus'])->name('events.updateStatus');

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Services\EventAggregator; // Import the EventAggregator class
 use App\Http\Controllers\Controller; // Import the Controller class
 use App\Traits\ApiResponse;
+use App\Models\Event;
+
 
 class EventController extends Controller
 {
@@ -43,5 +45,12 @@ class EventController extends Controller
         return $result
             ? $this->success([], 'Event successfully updated')
             : $this->error([], 'Event not found', 404);
+    }
+
+    public function updateStatus(Request $request, Event $event)
+    {
+        $event->update(['is_read' => 1]);
+
+        return response()->json(['message' => 'Event status updated successfully']);
     }
 }
