@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\HomeController;
+
+Route::get('/', [AuthController::class, 'login'])->name('login');
+Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::get('/auth/{provider}', [AuthController::class, 'redirect']);
+Route::get('/auth/{provider}/callback', [AuthController::class, 'callback']);
+
+Route::get('/home', [HomeController::class, 'index'])->name('dashboard');
